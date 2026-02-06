@@ -2,16 +2,38 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- SQLite database (or PostgreSQL - see Prisma configuration)
+- Stripe account
+- Clerk account
+- OpenAI API key
+
+### Environment Setup
+
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Fill in the required environment variables:
+   - Database URL (Prisma)
+   - Clerk Keys
+   - Stripe Keys
+   - OpenAI API Key
+
+### Installation
+
+```bash
+npm install
+npx prisma generate
+npx prisma db push
+```
+
+### Running the App
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  clerkId         String   @unique
+  email           String   @unique
+  name            String?
+  resumeUrl       String?
+  plan            String   @default("FREE") // Enum: Plan
+  credits         Int      @default(0)
+  mocksThisMonth  Int      @default(0)
+  lastMockReset   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sessions        InterviewSession[]
+  subscription    Subscription?
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String   @unique
+  stripeSubscriptionId String   @unique
+  stripePriceId        String
+  status               String
+  currentPeriodEnd     DateTime
+  createdAt            DateTime @default(now())
+}
+
+model InterviewSession {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track       String        // Enum: Track
+  difficulty  String        // Enum: Difficulty
+  mode        String        @default("TEXT") // Enum: InterviewMode
+  status      String        @default("IN_PROGRESS") // Enum: SessionStatus
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+
+  questions   Question[]
+  report      Report?
+}
+
+model Question {
+  id        String       @id @default(cuid())
+  sessionId String
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  content   String
+  type      String       // Enum: QuestionType
+  order     Int
+
+  response  Response?
+}
+
+model Response {
+  id             String   @id @default(cuid())
+  questionId     String   @unique
+  question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer         String
+  codeSnippet    String?
+  audioUrl       String?
+
+  // AI Grading Scores (0-100)
+  accuracy       Float?
+  clarity        Float?
+  confidence     Float?
+  technicalDepth Float?
+  overallScore   Float?
+  feedback       String?
+
+  createdAt      DateTime @default(now())
+}
+
+model Report {
+  id              String           @id @default(cuid())
+  sessionId       String           @unique
+  session         InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  overallScore    Float
+  strengths       String // JSON String
+  weaknesses      String // JSON String
+  recommendations String // JSON String
+  roadmap         String? // JSON String
+
+  createdAt       DateTime @default(now())
+}
