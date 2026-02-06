@@ -26,12 +26,12 @@ export const PLANS = {
         features: [
             "Unlimited mock interviews",
             "All difficulty levels",
-            "Voice interview mode",
             "AI-powered detailed reports",
-            "Resume-based tailored interviews",
-            "All role tracks",
-            "Progress dashboard",
-            "Priority responses",
+            "All role tracks (Frontend, Backend, DSA, etc.)",
+            "Progress dashboard & analytics",
+            "Performance tracking over time",
+            "Detailed feedback on each answer",
+            "Priority support",
         ],
     },
 } as const;
@@ -70,8 +70,8 @@ export async function createCheckoutSession(
 
     // In demo mode or if API key is not configured, return success URL directly
     const isDemo = process.env.DEMO_MODE === "true";
-    const hasValidKey = process.env.STRIPE_SECRET_KEY && 
-                       !process.env.STRIPE_SECRET_KEY?.includes("placeholder");
+    const hasValidKey = process.env.STRIPE_SECRET_KEY &&
+        !process.env.STRIPE_SECRET_KEY?.includes("placeholder");
 
     if (isDemo || !hasValidKey) {
         console.log(`📝 DEMO MODE: Simulating Stripe checkout session (${mode})`);
@@ -108,8 +108,8 @@ export async function createCustomerPortalSession(
 ): Promise<string> {
     // In demo mode or if API key is not configured, return return URL directly
     const isDemo = process.env.DEMO_MODE === "true";
-    const hasValidKey = process.env.STRIPE_SECRET_KEY && 
-                       !process.env.STRIPE_SECRET_KEY?.includes("placeholder");
+    const hasValidKey = process.env.STRIPE_SECRET_KEY &&
+        !process.env.STRIPE_SECRET_KEY?.includes("placeholder");
 
     if (isDemo || !hasValidKey) {
         console.log("📝 DEMO MODE: Simulating Stripe customer portal");
