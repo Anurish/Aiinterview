@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, FileText, Play } from "lucide-react";
+import { ArrowLeft, FileText, Play, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TRACK_OPTIONS, DIFFICULTY_OPTIONS, type Track, type Difficulty } from "@/types";
 
-export default function NewInterviewPage() {
+function NewInterviewContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const preselectedTrack = searchParams.get("track") as Track | null;
@@ -218,3 +218,20 @@ export default function NewInterviewPage() {
         </div>
     );
 }
+
+function NewInterviewLoading() {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        </div>
+    );
+}
+
+export default function NewInterviewPage() {
+    return (
+        <Suspense fallback={<NewInterviewLoading />}>
+            <NewInterviewContent />
+        </Suspense>
+    );
+}
+

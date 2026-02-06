@@ -13,6 +13,7 @@
     "@clerk/nextjs": "^6.37.1",
     "@monaco-editor/react": "^4.7.0",
     "@prisma/client": "^6.0.0",
+    "@prisma/extension-accelerate": "^3.0.1",
     "@types/dom-speech-recognition": "^0.0.7",
     "@types/pdf-parse": "^1.1.5",
     "class-variance-authority": "^0.7.1",

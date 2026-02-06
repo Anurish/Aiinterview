@@ -44,7 +44,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
         const reportData = await generateReport({
             track: session.track as Track,
             difficulty: session.difficulty as Difficulty,
-            questions: session.questions.map((q) => ({
+            questions: session.questions.map((q: { content: string; response: { answer: string; overallScore: number | null; feedback: string | null } | null }) => ({
                 content: q.content,
                 response: q.response
                     ? {
@@ -69,17 +69,19 @@ export default async function ReportPage({ params }: ReportPageProps) {
     }
 
     // Calculate average scores
-    const responses = session.questions.map((q) => q.response).filter(Boolean);
+    type ResponseType = { accuracy: number | null; clarity: number | null; confidence: number | null; technicalDepth: number | null; overallScore: number | null } | null;
+    const responses = session.questions.map((q: { response: ResponseType }) => q.response).filter(Boolean) as NonNullable<ResponseType>[];
     const avgScores = {
-        accuracy: responses.reduce((acc, r) => acc + (r?.accuracy || 0), 0) / responses.length || 0,
-        clarity: responses.reduce((acc, r) => acc + (r?.clarity || 0), 0) / responses.length || 0,
-        confidence: responses.reduce((acc, r) => acc + (r?.confidence || 0), 0) / responses.length || 0,
-        technicalDepth: responses.reduce((acc, r) => acc + (r?.technicalDepth || 0), 0) / responses.length || 0,
-        overall: responses.reduce((acc, r) => acc + (r?.overallScore || 0), 0) / responses.length || 0,
+        accuracy: responses.reduce((acc: number, r) => acc + (r?.accuracy || 0), 0) / responses.length || 0,
+        clarity: responses.reduce((acc: number, r) => acc + (r?.clarity || 0), 0) / responses.length || 0,
+        confidence: responses.reduce((acc: number, r) => acc + (r?.confidence || 0), 0) / responses.length || 0,
+        technicalDepth: responses.reduce((acc: number, r) => acc + (r?.technicalDepth || 0), 0) / responses.length || 0,
+        overall: responses.reduce((acc: number, r) => acc + (r?.overallScore || 0), 0) / responses.length || 0,
     };
 
     // Prepare chart data
-    const chartData = session.questions.map((q, i) => ({
+    type QuestionWithResponse = { response: { overallScore: number | null; accuracy: number | null; clarity: number | null; confidence: number | null; technicalDepth: number | null } | null };
+    const chartData = session.questions.map((q: QuestionWithResponse, i: number) => ({
         date: `Q${i + 1}`,
         overallScore: q.response?.overallScore || 0,
         accuracy: q.response?.accuracy || 0,
@@ -163,7 +165,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
             {/* Question-by-Question Review */}
             <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-white">Question Review</h2>
-                {session.questions.map((question, index) => (
+                {session.questions.map((question: { id: string; type: string; content: string; response: { overallScore: number | null; answer: string; feedback: string | null } | null }, index: number) => (
                     <div
                         key={question.id}
                         className="p-6 rounded-xl bg-white/5 border border-white/10"

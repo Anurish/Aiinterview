@@ -64,10 +64,17 @@ export default async function HistoryPage() {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {sessions.map((session) => {
-                        const avgScore = session.questions.reduce((acc, q) => {
+                    {sessions.map((session: {
+                        id: string;
+                        track: string;
+                        difficulty: string;
+                        status: string;
+                        startedAt: Date;
+                        questions: Array<{ response: { overallScore: number | null } | null }>;
+                    }) => {
+                        const avgScore = session.questions.reduce((acc: number, q: { response: { overallScore: number | null } | null }) => {
                             return acc + (q.response?.overallScore || 0);
-                        }, 0) / session.questions.filter(q => q.response?.overallScore).length || 0;
+                        }, 0) / session.questions.filter((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore).length || 0;
 
                         return (
                             <Link
@@ -80,10 +87,10 @@ export default async function HistoryPage() {
                                         {/* Score Badge */}
                                         <div
                                             className={`h-14 w-14 rounded-xl flex items-center justify-center font-bold text-lg ${avgScore >= 80
-                                                    ? "bg-green-500/20 text-green-400"
-                                                    : avgScore >= 60
-                                                        ? "bg-yellow-500/20 text-yellow-400"
-                                                        : "bg-red-500/20 text-red-400"
+                                                ? "bg-green-500/20 text-green-400"
+                                                : avgScore >= 60
+                                                    ? "bg-yellow-500/20 text-yellow-400"
+                                                    : "bg-red-500/20 text-red-400"
                                                 }`}
                                         >
                                             {Math.round(avgScore) || "-"}
@@ -116,10 +123,10 @@ export default async function HistoryPage() {
                                     <div className="flex items-center gap-4">
                                         <span
                                             className={`px-3 py-1 rounded-full text-xs font-medium ${session.status === "COMPLETED"
-                                                    ? "bg-green-500/20 text-green-400"
-                                                    : session.status === "IN_PROGRESS"
-                                                        ? "bg-yellow-500/20 text-yellow-400"
-                                                        : "bg-gray-500/20 text-gray-400"
+                                                ? "bg-green-500/20 text-green-400"
+                                                : session.status === "IN_PROGRESS"
+                                                    ? "bg-yellow-500/20 text-yellow-400"
+                                                    : "bg-gray-500/20 text-gray-400"
                                                 }`}
                                         >
                                             {session.status.replace("_", " ")}

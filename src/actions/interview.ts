@@ -129,7 +129,7 @@ export async function completeInterview(sessionId: string) {
     const reportData = await generateReport({
         track: session.track as Track,
         difficulty: session.difficulty as Difficulty,
-        questions: session.questions.map((q) => ({
+        questions: session.questions.map((q: { content: string; response: { answer: string; overallScore: number | null; feedback: string | null } | null }) => ({
             content: q.content,
             response: q.response
                 ? {
@@ -189,18 +189,18 @@ export async function getUserStats() {
 
     const totalInterviews = user.sessions.length;
     const completedInterviews = user.sessions.filter(
-        (s) => s.status === "COMPLETED"
+        (s: { status: string }) => s.status === "COMPLETED"
     ).length;
 
-    const allScores = user.sessions.flatMap((s) =>
+    const allScores = user.sessions.flatMap((s: { questions: Array<{ response: { overallScore: number | null } | null }> }) =>
         s.questions
-            .map((q) => q.response?.overallScore)
-            .filter((score): score is number => score !== null && score !== undefined)
+            .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+            .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
     );
 
     const avgScore =
         allScores.length > 0
-            ? allScores.reduce((a, b) => a + b, 0) / allScores.length
+            ? allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length
             : 0;
 
     return {
@@ -211,3 +211,4 @@ export async function getUserStats() {
         credits: user.credits,
     };
 }
+

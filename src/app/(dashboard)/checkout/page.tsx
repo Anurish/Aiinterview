@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Lock, Check } from "lucide-react";
@@ -8,7 +8,7 @@ import { PLANS, CREDIT_PACKS } from "@/lib/stripe";
 
 type PlanType = "pro" | "credit_1" | "credit_3" | "credit_7";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const planId = searchParams.get("plan") as PlanType;
@@ -267,3 +267,20 @@ export default function CheckoutPage() {
         </div>
     );
 }
+
+function CheckoutLoading() {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        </div>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={<CheckoutLoading />}>
+            <CheckoutContent />
+        </Suspense>
+    );
+}
+

@@ -40,14 +40,25 @@ export async function GET() {
         });
 
         // Calculate metrics
+        type SessionType = {
+            id: string;
+            status: string;
+            difficulty: string;
+            track: string;
+            startedAt: Date;
+            completedAt: Date | null;
+            questions: Array<{ response: { overallScore: number | null } | null }>;
+            report: { overallScore: number; weaknesses: string; strengths: string } | null;
+        };
+
         const totalInterviews = sessions.length;
-        const completedInterviews = sessions.filter((s) => s.status === "COMPLETED").length;
+        const completedInterviews = sessions.filter((s: SessionType) => s.status === "COMPLETED").length;
 
         // Calculate average scores by difficulty
         const scoresByDifficulty: Record<string, { total: number; count: number; avg: number }> = {};
         const scoresByTrack: Record<string, { total: number; count: number; avg: number }> = {};
 
-        sessions.forEach((session) => {
+        sessions.forEach((session: SessionType) => {
             if (session.report) {
                 const difficulty = session.difficulty;
                 const track = session.track;
@@ -77,12 +88,12 @@ export async function GET() {
         // Calculate overall average
         const overallScore =
             sessions.length > 0
-                ? sessions.reduce((sum, s) => sum + (s.report?.overallScore || 0), 0) / completedInterviews
+                ? sessions.reduce((sum: number, s: SessionType) => sum + (s.report?.overallScore || 0), 0) / completedInterviews
                 : 0;
 
         // Get recent performance trend (last 10 interviews)
         const recentInterviews = sessions.slice(0, 10).reverse();
-        const performanceTrend = recentInterviews.map((session) => ({
+        const performanceTrend = recentInterviews.map((session: SessionType) => ({
             date: session.startedAt.toISOString().split("T")[0],
             score: session.report?.overallScore || 0,
             difficulty: session.difficulty,
@@ -91,7 +102,7 @@ export async function GET() {
 
         // Get weak areas (topics mentioned in weaknesses)
         const weakAreas: Record<string, number> = {};
-        sessions.forEach((session) => {
+        sessions.forEach((session: SessionType) => {
             if (session.report?.weaknesses) {
                 try {
                     const weaknesses = JSON.parse(session.report.weaknesses);
@@ -100,13 +111,13 @@ export async function GET() {
                             weakAreas[w] = (weakAreas[w] || 0) + 1;
                         });
                     }
-                } catch (e) {}
+                } catch (e) { }
             }
         });
 
         // Get strengths
         const strengths: Record<string, number> = {};
-        sessions.forEach((session) => {
+        sessions.forEach((session: SessionType) => {
             if (session.report?.strengths) {
                 try {
                     const str = JSON.parse(session.report.strengths);
@@ -115,7 +126,7 @@ export async function GET() {
                             strengths[s] = (strengths[s] || 0) + 1;
                         });
                     }
-                } catch (e) {}
+                } catch (e) { }
             }
         });
 
@@ -151,7 +162,7 @@ export async function GET() {
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 5)
                 .map(([strength, count]) => ({ strength, count })),
-            recentSessions: sessions.slice(0, 5).map((session) => ({
+            recentSessions: sessions.slice(0, 5).map((session: SessionType) => ({
                 id: session.id,
                 track: session.track,
                 difficulty: session.difficulty,

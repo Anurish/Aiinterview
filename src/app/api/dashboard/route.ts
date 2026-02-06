@@ -41,18 +41,27 @@ export async function GET(request: NextRequest) {
             orderBy: { startedAt: "desc" },
         });
 
+        // Type definition for session
+        type SessionType = {
+            id: string;
+            track: string;
+            difficulty: string;
+            startedAt: Date;
+            questions: Array<{ response: { overallScore: number | null } | null }>;
+        };
+
         // Calculate statistics
         const totalInterviews = sessions.length;
 
         // Get all scores
-        const allScores = sessions.flatMap((session) =>
+        const allScores = sessions.flatMap((session: SessionType) =>
             session.questions
-                .map((q) => q.response?.overallScore)
-                .filter((score: any) => score !== null && score !== undefined) as number[]
+                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+                .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
         );
 
         const averageScore = allScores.length > 0
-            ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+            ? Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length)
             : 0;
 
         // Calculate total practice time (estimate: 15 minutes per interview)
@@ -65,38 +74,38 @@ export async function GET(request: NextRequest) {
         const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
 
         const thisMonthScores = sessions
-            .filter((s) => s.startedAt >= oneMonthAgo)
-            .flatMap((s) =>
+            .filter((s: SessionType) => s.startedAt >= oneMonthAgo)
+            .flatMap((s: SessionType) =>
                 s.questions
-                    .map((q) => q.response?.overallScore)
-                    .filter((s: any) => s !== null && s !== undefined) as number[]
+                    .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+                    .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
             );
 
         const lastMonthScores = sessions
-            .filter((s) => s.startedAt >= twoMonthsAgo && s.startedAt < oneMonthAgo)
-            .flatMap((s) =>
+            .filter((s: SessionType) => s.startedAt >= twoMonthsAgo && s.startedAt < oneMonthAgo)
+            .flatMap((s: SessionType) =>
                 s.questions
-                    .map((q) => q.response?.overallScore)
-                    .filter((s: any) => s !== null && s !== undefined) as number[]
+                    .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+                    .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
             );
 
         const thisMonthAvg = thisMonthScores.length > 0
-            ? Math.round(thisMonthScores.reduce((a, b) => a + b, 0) / thisMonthScores.length)
+            ? Math.round(thisMonthScores.reduce((a: number, b: number) => a + b, 0) / thisMonthScores.length)
             : 0;
 
         const lastMonthAvg = lastMonthScores.length > 0
-            ? Math.round(lastMonthScores.reduce((a, b) => a + b, 0) / lastMonthScores.length)
+            ? Math.round(lastMonthScores.reduce((a: number, b: number) => a + b, 0) / lastMonthScores.length)
             : 0;
 
         const improvement = lastMonthAvg > 0 ? thisMonthAvg - lastMonthAvg : 0;
 
         // Get recent sessions
-        const recentSessions = sessions.slice(0, 5).map((session) => {
+        const recentSessions = sessions.slice(0, 5).map((session: SessionType) => {
             const scores = session.questions
-                .map((q) => q.response?.overallScore)
-                .filter((s: any) => s !== null && s !== undefined) as number[];
+                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+                .filter((s: number | null | undefined): s is number => s !== null && s !== undefined);
             const score = scores.length > 0
-                ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+                ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
                 : 0;
 
             return {
@@ -110,7 +119,7 @@ export async function GET(request: NextRequest) {
 
         // Get track breakdown for quick actions
         const trackCounts: Record<string, number> = {};
-        sessions.forEach((session) => {
+        sessions.forEach((session: SessionType) => {
             trackCounts[session.track] = (trackCounts[session.track] || 0) + 1;
         });
 

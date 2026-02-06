@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -40,7 +40,7 @@ interface DashboardData {
     trackCounts: Record<string, number>;
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -103,11 +103,10 @@ export default function DashboardPage() {
             {/* Success/Error Notification */}
             {showNotification && (
                 <div
-                    className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right ${
-                        notificationType === "success"
+                    className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right ${notificationType === "success"
                             ? "bg-green-500/20 border border-green-500/30 text-green-300"
                             : "bg-red-500/20 border border-red-500/30 text-red-300"
-                    }`}
+                        }`}
                 >
                     {notificationType === "success" ? (
                         <CheckCircle className="h-5 w-5 flex-shrink-0" />
@@ -261,10 +260,10 @@ export default function DashboardPage() {
                                 <div className="flex items-center gap-4">
                                     <div
                                         className={`h-12 w-12 rounded-xl flex items-center justify-center font-bold ${session.score >= 80
-                                                ? "bg-green-500/20 text-green-400"
-                                                : session.score >= 60
-                                                    ? "bg-yellow-500/20 text-yellow-400"
-                                                    : "bg-red-500/20 text-red-400"
+                                            ? "bg-green-500/20 text-green-400"
+                                            : session.score >= 60
+                                                ? "bg-yellow-500/20 text-yellow-400"
+                                                : "bg-red-500/20 text-red-400"
                                             }`}
                                     >
                                         {session.score}
@@ -320,3 +319,23 @@ export default function DashboardPage() {
         </div>
     );
 }
+
+function DashboardLoading() {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-violet-500" />
+                <p className="text-gray-400">Loading your dashboard...</p>
+            </div>
+        </div>
+    );
+}
+
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={<DashboardLoading />}>
+            <DashboardContent />
+        </Suspense>
+    );
+}
+

@@ -43,18 +43,24 @@ export default async function ProfilePage() {
     if (!dbUser) return notFound();
 
     // Calculate stats
+    type SessionWithQuestions = {
+        status: string;
+        startedAt: Date;
+        questions: Array<{ response: { overallScore: number | null } | null }>;
+    };
+
     const totalInterviews = dbUser.sessions.length;
     const completedInterviews = dbUser.sessions.filter(
-        (s) => s.status === "COMPLETED"
+        (s: SessionWithQuestions) => s.status === "COMPLETED"
     ).length;
     const avgScore =
-        dbUser.sessions.reduce((acc, s) => {
+        dbUser.sessions.reduce((acc: number, s: SessionWithQuestions) => {
             const scores = s.questions
-                .map((q) => q.response?.overallScore)
+                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
                 .filter(Boolean) as number[];
             const sessAvg =
                 scores.length > 0
-                    ? scores.reduce((a, b) => a + b, 0) / scores.length
+                    ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length
                     : 0;
             return acc + sessAvg;
         }, 0) / Math.max(completedInterviews, 1);
@@ -63,12 +69,12 @@ export default async function ProfilePage() {
     const chartData = dbUser.sessions
         .slice(0, 10)
         .reverse()
-        .map((s) => {
+        .map((s: SessionWithQuestions) => {
             const scores = s.questions
-                .map((q) => q.response?.overallScore)
+                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
                 .filter(Boolean) as number[];
             const avg =
-                scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
             return {
                 date: formatDate(s.startedAt),
                 overallScore: avg,
@@ -96,8 +102,8 @@ export default async function ProfilePage() {
                         </div>
                         <div
                             className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${dbUser.plan === "PRO"
-                                    ? "bg-violet-500/20 text-violet-400"
-                                    : "bg-gray-500/20 text-gray-400"
+                                ? "bg-violet-500/20 text-violet-400"
+                                : "bg-gray-500/20 text-gray-400"
                                 }`}
                         >
                             {dbUser.plan === "PRO" && <Sparkles className="h-4 w-4" />}

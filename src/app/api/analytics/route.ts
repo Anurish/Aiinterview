@@ -42,25 +42,35 @@ export async function GET(request: NextRequest) {
             orderBy: { startedAt: "desc" },
         });
 
+        // Type definition for session
+        type SessionType = {
+            id: string;
+            track: string;
+            difficulty: string;
+            startedAt: Date;
+            questions: Array<{ response: { overallScore: number | null } | null }>;
+            report: { overallScore: number } | null;
+        };
+
         // Calculate overall statistics
         const totalInterviews = sessions.length;
 
         // Collect all response scores
-        const allScores = sessions.flatMap((session) =>
+        const allScores = sessions.flatMap((session: SessionType) =>
             session.questions
-                .map((q) => q.response?.overallScore)
-                .filter((score: any) => score !== null && score !== undefined) as number[]
+                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+                .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
         );
 
         const averageScore = allScores.length > 0
-            ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+            ? Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length)
             : 0;
 
         const bestScore = allScores.length > 0 ? Math.max(...allScores) : 0;
 
         // Track distribution
         const trackCounts: Record<string, number> = {};
-        sessions.forEach((session) => {
+        sessions.forEach((session: SessionType) => {
             trackCounts[session.track] = (trackCounts[session.track] || 0) + 1;
         });
 
@@ -82,12 +92,12 @@ export async function GET(request: NextRequest) {
             ADVANCED: { interviews: 0, scores: [] },
         };
 
-        sessions.forEach((session) => {
+        sessions.forEach((session: SessionType) => {
             const difficulty = session.difficulty as string;
             difficultyStats[difficulty].interviews += 1;
             const sessionScores = session.questions
-                .map((q) => q.response?.overallScore)
-                .filter((s: any) => s !== null && s !== undefined) as number[];
+                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+                .filter((s: number | null | undefined): s is number => s !== null && s !== undefined);
             difficultyStats[difficulty].scores.push(...sessionScores);
         });
 
@@ -97,7 +107,7 @@ export async function GET(request: NextRequest) {
                 interviews: data.interviews,
                 avgScore:
                     data.scores.length > 0
-                        ? Math.round(data.scores.reduce((a, b) => a + b, 0) / data.scores.length)
+                        ? Math.round(data.scores.reduce((a: number, b: number) => a + b, 0) / data.scores.length)
                         : 0,
             }))
             .filter((d) => d.interviews > 0);
@@ -108,7 +118,7 @@ export async function GET(request: NextRequest) {
 
         const monthlyData: Record<string, { scores: number[]; count: number }> = {};
 
-        sessions.forEach((session) => {
+        sessions.forEach((session: SessionType) => {
             if (session.startedAt >= sixMonthsAgo) {
                 const month = session.startedAt.toLocaleString("default", {
                     month: "short",
@@ -118,8 +128,8 @@ export async function GET(request: NextRequest) {
                 }
                 monthlyData[month].count += 1;
                 const sessionScores = session.questions
-                    .map((q) => q.response?.overallScore)
-                    .filter((s: any) => s !== null && s !== undefined) as number[];
+                    .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+                    .filter((s: number | null | undefined): s is number => s !== null && s !== undefined);
                 monthlyData[month].scores.push(...sessionScores);
             }
         });
@@ -129,7 +139,7 @@ export async function GET(request: NextRequest) {
             month,
             score: monthlyData[month]
                 ? Math.round(
-                    monthlyData[month].scores.reduce((a, b) => a + b, 0) /
+                    monthlyData[month].scores.reduce((a: number, b: number) => a + b, 0) /
                     monthlyData[month].scores.length
                 )
                 : 0,
@@ -137,13 +147,13 @@ export async function GET(request: NextRequest) {
         }));
 
         // Recent interviews
-        const recentInterviews = sessions.slice(0, 10).map((session) => {
+        const recentInterviews = sessions.slice(0, 10).map((session: SessionType) => {
             const avgScore = session.questions
-                .map((q) => q.response?.overallScore)
-                .filter((s: any) => s !== null && s !== undefined) as number[];
+                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
+                .filter((s: number | null | undefined): s is number => s !== null && s !== undefined);
             const score =
                 avgScore.length > 0
-                    ? Math.round(avgScore.reduce((a, b) => a + b, 0) / avgScore.length)
+                    ? Math.round(avgScore.reduce((a: number, b: number) => a + b, 0) / avgScore.length)
                     : 0;
 
             return {
@@ -159,7 +169,7 @@ export async function GET(request: NextRequest) {
         // Calculate streak (consecutive days of practice)
         let streak = 0;
         const sessionDates = new Set(
-            sessions.map((s) => s.startedAt.toISOString().split("T")[0])
+            sessions.map((s: SessionType) => s.startedAt.toISOString().split("T")[0])
         );
         const today = new Date();
         for (let i = 0; i < 365; i++) {
