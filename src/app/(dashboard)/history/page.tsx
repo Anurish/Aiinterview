@@ -71,11 +71,22 @@ export default async function HistoryPage() {
                         difficulty: string;
                         status: string;
                         startedAt: Date;
-                        questions: Array<{ response: { overallScore: number | null } | null }>;
+                        questions: Array<{ response: { accuracy: number | null; clarity: number | null; confidence: number | null; technicalDepth: number | null; overallScore: number | null } | null }>;
                     }) => {
-                        const avgScore = session.questions.reduce((acc: number, q: { response: { overallScore: number | null } | null }) => {
-                            return acc + (q.response?.overallScore || 0);
-                        }, 0) / session.questions.filter((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore).length || 0;
+                        // Calculate weighted average like the report page
+                        const responsesWithScores = session.questions
+                            .map(q => q.response)
+                            .filter(r => r && (r.accuracy !== null || r.clarity !== null || r.confidence !== null || r.technicalDepth !== null));
+
+                        let avgScore = 0;
+                        if (responsesWithScores.length > 0) {
+                            const avgAccuracy = responsesWithScores.reduce((acc, r) => acc + (r?.accuracy || 0), 0) / responsesWithScores.length;
+                            const avgClarity = responsesWithScores.reduce((acc, r) => acc + (r?.clarity || 0), 0) / responsesWithScores.length;
+                            const avgConfidence = responsesWithScores.reduce((acc, r) => acc + (r?.confidence || 0), 0) / responsesWithScores.length;
+                            const avgTechnicalDepth = responsesWithScores.reduce((acc, r) => acc + (r?.technicalDepth || 0), 0) / responsesWithScores.length;
+                            // Weighted average: accuracy(35%) + clarity(25%) + confidence(15%) + technicalDepth(25%)
+                            avgScore = (avgAccuracy * 0.35) + (avgClarity * 0.25) + (avgConfidence * 0.15) + (avgTechnicalDepth * 0.25);
+                        }
 
                         return (
                             <Link
