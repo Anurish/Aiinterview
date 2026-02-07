@@ -1,32 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { createCheckoutSession, PLANS, CREDIT_PACKS } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const { planId } = await request.json();
 
-        // Get or create user
-        const clerkUser = await currentUser();
-        let user = await prisma.user.findUnique({ where: { clerkId: userId } });
-
-        if (!user && clerkUser) {
-            user = await prisma.user.create({
-                data: {
-                    clerkId: userId,
-                    email: clerkUser.emailAddresses[0]?.emailAddress || "",
-                    name: clerkUser.firstName || clerkUser.username || "",
-                },
-            });
-        }
+        // Get user
+        const user = await prisma.user.findUnique({ where: { id: session.user.id } });
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });

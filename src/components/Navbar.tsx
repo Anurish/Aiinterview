@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, LogOut, User } from "lucide-react";
 import { useState } from "react";
 
 const navLinks = [
@@ -15,7 +15,12 @@ const navLinks = [
 
 export function Navbar() {
     const pathname = usePathname();
+    const { data: session, status } = useSession();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+    const isLoading = status === "loading";
+    const isSignedIn = status === "authenticated";
 
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/80 backdrop-blur-xl">
@@ -51,30 +56,77 @@ export function Navbar() {
 
                     {/* Auth Buttons */}
                     <div className="flex items-center gap-4">
-                        <SignedOut>
-                            <Link
-                                href="/sign-in"
-                                className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
-                            >
-                                Sign In
-                            </Link>
-                            <Link
-                                href="/sign-up"
-                                className="rounded-lg bg-gradient-to-r from-violet-500 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-shadow"
-                            >
-                                Get Started
-                            </Link>
-                        </SignedOut>
-                        <SignedIn>
-                            <UserButton
-                                afterSignOutUrl="/"
-                                appearance={{
-                                    elements: {
-                                        avatarBox: "h-9 w-9 ring-2 ring-violet-500/50",
-                                    },
-                                }}
-                            />
-                        </SignedIn>
+                        {isLoading ? (
+                            <div className="h-9 w-9 rounded-full bg-white/10 animate-pulse" />
+                        ) : isSignedIn ? (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                    className="flex items-center gap-2 p-1 rounded-full ring-2 ring-violet-500/50 hover:ring-violet-500 transition-all"
+                                >
+                                    {session.user?.image ? (
+                                        <img
+                                            src={session.user.image}
+                                            alt={session.user.name || "User"}
+                                            className="h-8 w-8 rounded-full"
+                                        />
+                                    ) : (
+                                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                                            <span className="text-sm font-medium text-white">
+                                                {session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || "U"}
+                                            </span>
+                                        </div>
+                                    )}
+                                </button>
+
+                                {/* User Dropdown */}
+                                {isUserMenuOpen && (
+                                    <div className="absolute right-0 mt-2 w-48 rounded-xl bg-gray-900 border border-white/10 shadow-xl py-1">
+                                        <div className="px-4 py-3 border-b border-white/10">
+                                            <p className="text-sm font-medium text-white truncate">
+                                                {session.user?.name}
+                                            </p>
+                                            <p className="text-xs text-gray-400 truncate">
+                                                {session.user?.email}
+                                            </p>
+                                        </div>
+                                        <Link
+                                            href="/profile"
+                                            onClick={() => setIsUserMenuOpen(false)}
+                                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
+                                        >
+                                            <User className="h-4 w-4" />
+                                            Profile
+                                        </Link>
+                                        <button
+                                            onClick={() => {
+                                                setIsUserMenuOpen(false);
+                                                signOut({ callbackUrl: "/" });
+                                            }}
+                                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/5"
+                                        >
+                                            <LogOut className="h-4 w-4" />
+                                            Sign Out
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/sign-in"
+                                    className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    href="/sign-up"
+                                    className="rounded-lg bg-gradient-to-r from-violet-500 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-shadow"
+                                >
+                                    Get Started
+                                </Link>
+                            </>
+                        )}
 
                         {/* Mobile Menu Button */}
                         <button

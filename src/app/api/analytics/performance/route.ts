@@ -1,28 +1,20 @@
 import { prisma } from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 export async function GET() {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        let user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
         });
 
-        // If user doesn't exist, create them (fallback for webhook delay)
         if (!user) {
-            const clerkUser = await currentUser();
-            user = await prisma.user.create({
-                data: {
-                    clerkId: userId,
-                    email: clerkUser?.emailAddresses[0]?.emailAddress || "",
-                    name: clerkUser?.firstName || clerkUser?.username || "User",
-                },
-            });
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
         // Get all interview sessions with responses and reports

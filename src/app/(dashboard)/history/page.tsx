@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { currentUser } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { formatDate, getTrackLabel, getDifficultyColor, getScoreColor } from "@/lib/utils";
 import { Calendar, ChevronRight, Filter } from "lucide-react";
 
 export default async function HistoryPage() {
-    const user = await currentUser();
-    if (!user) return null;
+    const session = await auth();
+    if (!session?.user?.id) return null;
 
     const dbUser = await prisma.user.findUnique({
-        where: { clerkId: user.id },
+        where: { id: session.user.id },
         include: {
             sessions: {
                 include: {

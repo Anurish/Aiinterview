@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { currentUser } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { ReportCard } from "@/components/ReportCard";
 import { ProgressChart } from "@/components/ProgressChart";
 import { formatDate, getTrackLabel, getDifficultyColor } from "@/lib/utils";
@@ -13,12 +13,12 @@ interface ReportPageProps {
 }
 
 export default async function ReportPage({ params }: ReportPageProps) {
-    const user = await currentUser();
-    if (!user) return notFound();
+    const authSession = await auth();
+    if (!authSession?.user?.id) return notFound();
 
     const { reportId } = await params;
 
-    const session = await prisma.interviewSession.findUnique({
+    const interviewSession = await prisma.interviewSession.findUnique({
         where: { id: reportId },
         include: {
             user: true,
@@ -34,17 +34,17 @@ export default async function ReportPage({ params }: ReportPageProps) {
         },
     });
 
-    if (!session || session.user.clerkId !== user.id) {
+    if (!interviewSession || interviewSession.user.id !== authSession.user.id) {
         return notFound();
     }
 
     // Generate report if not exists
-    let report = session.report;
-    if (!report && session.status === "COMPLETED") {
+    let report = interviewSession.report;
+    if (!report && interviewSession.status === "COMPLETED") {
         const reportData = await generateReport({
-            track: session.track as Track,
-            difficulty: session.difficulty as Difficulty,
-            questions: session.questions.map((q: { content: string; response: { answer: string; overallScore: number | null; feedback: string | null } | null }) => ({
+            track: interviewSession.track as Track,
+            difficulty: interviewSession.difficulty as Difficulty,
+            questions: interviewSession.questions.map((q: { content: string; response: { answer: string; overallScore: number | null; feedback: string | null } | null }) => ({
                 content: q.content,
                 response: q.response
                     ? {
@@ -58,7 +58,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
 
         report = await prisma.report.create({
             data: {
-                sessionId: session.id,
+                sessionId: interviewSession.id,
                 overallScore: reportData.overallScore,
                 strengths: JSON.stringify(reportData.strengths),
                 weaknesses: JSON.stringify(reportData.weaknesses),
@@ -70,7 +70,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
 
     // Calculate average scores
     type ResponseType = { accuracy: number | null; clarity: number | null; confidence: number | null; technicalDepth: number | null; overallScore: number | null } | null;
-    const responses = session.questions.map((q: { response: ResponseType }) => q.response).filter(Boolean) as NonNullable<ResponseType>[];
+    const responses = interviewSession.questions.map((q: { response: ResponseType }) => q.response).filter(Boolean) as NonNullable<ResponseType>[];
     const avgScores = {
         accuracy: responses.reduce((acc: number, r) => acc + (r?.accuracy || 0), 0) / responses.length || 0,
         clarity: responses.reduce((acc: number, r) => acc + (r?.clarity || 0), 0) / responses.length || 0,
@@ -81,7 +81,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
 
     // Prepare chart data
     type QuestionWithResponse = { response: { overallScore: number | null; accuracy: number | null; clarity: number | null; confidence: number | null; technicalDepth: number | null } | null };
-    const chartData = session.questions.map((q: QuestionWithResponse, i: number) => ({
+    const chartData = interviewSession.questions.map((q: QuestionWithResponse, i: number) => ({
         date: `Q${i + 1}`,
         overallScore: q.response?.overallScore || 0,
         accuracy: q.response?.accuracy || 0,
@@ -108,19 +108,19 @@ export default async function ReportPage({ params }: ReportPageProps) {
                     </Link>
                     <div>
                         <h1 className="text-2xl font-bold text-white">
-                            {getTrackLabel(session.track)} Interview Report
+                            {getTrackLabel(interviewSession.track)} Interview Report
                         </h1>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${getDifficultyColor(session.difficulty)}`}>
-                                {session.difficulty}
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${getDifficultyColor(interviewSession.difficulty)}`}>
+                                {interviewSession.difficulty}
                             </span>
                             <span className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                {formatDate(session.startedAt)}
+                                {formatDate(interviewSession.startedAt)}
                             </span>
                             <span className="flex items-center gap-1">
                                 <MessageSquare className="h-4 w-4" />
-                                {session.questions.length} questions
+                                {interviewSession.questions.length} questions
                             </span>
                         </div>
                     </div>
@@ -165,7 +165,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
             {/* Question-by-Question Review */}
             <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-white">Question Review</h2>
-                {session.questions.map((question: { id: string; type: string; content: string; response: { overallScore: number | null; answer: string; feedback: string | null } | null }, index: number) => (
+                {interviewSession.questions.map((question: { id: string; type: string; content: string; response: { overallScore: number | null; answer: string; feedback: string | null } | null }, index: number) => (
                     <div
                         key={question.id}
                         className="p-6 rounded-xl bg-white/5 border border-white/10"

@@ -1,31 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         // Get user from database
-        let user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
         });
 
-        // If user doesn't exist, create them (fallback for webhook delay)
         if (!user) {
-            const clerkUser = await currentUser();
-            user = await prisma.user.create({
-                data: {
-                    clerkId: userId,
-                    email: clerkUser?.emailAddresses[0]?.emailAddress || "",
-                    name: clerkUser?.firstName || clerkUser?.username || "User",
-                },
-            });
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
         // Get all interview sessions for this user
@@ -44,96 +36,96 @@ export async function GET(request: NextRequest) {
         // Type definition for session
         type SessionType = {
             id: string;
+            status: string;
             track: string;
             difficulty: string;
             startedAt: Date;
             questions: Array<{ response: { overallScore: number | null } | null }>;
         };
 
-        // Calculate statistics
-        const totalInterviews = sessions.length;
+        // Calculate stats
+        const completedSessions = sessions.filter((s: SessionType) => s.status === "COMPLETED") as SessionType[];
+        const totalInterviews = completedSessions.length;
 
-        // Get all scores
-        const allScores = sessions.flatMap((session: SessionType) =>
-            session.questions
-                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
-                .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
+        // Calculate average score
+        const scoredSessions = completedSessions.filter(
+            (s: SessionType) => s.questions.some((q) => q.response?.overallScore !== null)
         );
 
-        const averageScore = allScores.length > 0
-            ? Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length)
-            : 0;
+        let averageScore = 0;
+        if (scoredSessions.length > 0) {
+            const totalScore = scoredSessions.reduce((acc: number, s: SessionType) => {
+                const sessionScores = s.questions
+                    .filter((q) => q.response?.overallScore !== null)
+                    .map((q) => q.response!.overallScore!);
+                const sessionAvg = sessionScores.length > 0
+                    ? sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length
+                    : 0;
+                return acc + sessionAvg;
+            }, 0);
+            averageScore = Math.round(totalScore / scoredSessions.length);
+        }
 
-        // Calculate total practice time (estimate: 15 minutes per interview)
-        const practiceTimeMinutes = totalInterviews * 15;
-        const practiceHours = (practiceTimeMinutes / 60).toFixed(1);
+        // Calculate practice time (rough estimate: 5 mins per question)
+        const totalQuestions = sessions.reduce((acc: number, s: SessionType) => acc + s.questions.length, 0);
+        const practiceTime = Math.round((totalQuestions * 5) / 60);
 
-        // Calculate improvement (compare last month vs previous month)
-        const now = new Date();
-        const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-        const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
+        // Calculate improvement (compare first half vs second half of sessions)
+        let improvement = 0;
+        if (scoredSessions.length >= 4) {
+            const half = Math.floor(scoredSessions.length / 2);
+            const firstHalf = scoredSessions.slice(-half); // older sessions
+            const secondHalf = scoredSessions.slice(0, half); // newer sessions
 
-        const thisMonthScores = sessions
-            .filter((s: SessionType) => s.startedAt >= oneMonthAgo)
-            .flatMap((s: SessionType) =>
-                s.questions
-                    .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
-                    .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
-            );
+            const getAvgScore = (sessions: SessionType[]) => {
+                const scores = sessions.flatMap((s: SessionType) =>
+                    s.questions
+                        .filter((q) => q.response?.overallScore !== null)
+                        .map((q) => q.response!.overallScore!)
+                );
+                return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+            };
 
-        const lastMonthScores = sessions
-            .filter((s: SessionType) => s.startedAt >= twoMonthsAgo && s.startedAt < oneMonthAgo)
-            .flatMap((s: SessionType) =>
-                s.questions
-                    .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
-                    .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
-            );
+            const firstHalfAvg = getAvgScore(firstHalf as SessionType[]);
+            const secondHalfAvg = getAvgScore(secondHalf as SessionType[]);
+            improvement = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
+        }
 
-        const thisMonthAvg = thisMonthScores.length > 0
-            ? Math.round(thisMonthScores.reduce((a: number, b: number) => a + b, 0) / thisMonthScores.length)
-            : 0;
-
-        const lastMonthAvg = lastMonthScores.length > 0
-            ? Math.round(lastMonthScores.reduce((a: number, b: number) => a + b, 0) / lastMonthScores.length)
-            : 0;
-
-        const improvement = lastMonthAvg > 0 ? thisMonthAvg - lastMonthAvg : 0;
-
-        // Get recent sessions
-        const recentSessions = sessions.slice(0, 5).map((session: SessionType) => {
-            const scores = session.questions
-                .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
-                .filter((s: number | null | undefined): s is number => s !== null && s !== undefined);
+        // Get recent sessions (top 5)
+        const recentSessions = completedSessions.slice(0, 5).map((s: SessionType) => {
+            const scores = s.questions
+                .filter((q) => q.response?.overallScore !== null)
+                .map((q) => q.response!.overallScore!);
             const score = scores.length > 0
-                ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
+                ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
                 : 0;
 
             return {
-                id: session.id,
-                track: session.track,
-                difficulty: session.difficulty,
+                id: s.id,
+                track: s.track.toLowerCase(),
+                difficulty: s.difficulty.toLowerCase(),
                 score,
-                date: session.startedAt,
+                date: s.startedAt.toISOString(),
             };
         });
 
-        // Get track breakdown for quick actions
-        const trackCounts: Record<string, number> = {};
-        sessions.forEach((session: SessionType) => {
-            trackCounts[session.track] = (trackCounts[session.track] || 0) + 1;
-        });
+        // Track distribution
+        const trackCounts = completedSessions.reduce((acc: Record<string, number>, s: SessionType) => {
+            acc[s.track] = (acc[s.track] || 0) + 1;
+            return acc;
+        }, {});
 
         return NextResponse.json({
             user: {
-                name: user.name || "Developer",
+                name: user.name || "User",
                 plan: user.plan,
                 credits: user.credits,
             },
             stats: {
                 totalInterviews,
                 averageScore,
-                practiceTime: parseFloat(practiceHours),
-                improvement,
+                practiceTime,
+                improvement: Math.round(improvement),
             },
             recentSessions,
             trackCounts,

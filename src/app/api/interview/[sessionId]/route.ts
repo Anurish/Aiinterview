@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -9,14 +9,14 @@ export async function GET(
     { params }: { params: Promise<{ sessionId: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const { sessionId } = await params;
 
-        const session = await prisma.interviewSession.findUnique({
+        const interviewSession = await prisma.interviewSession.findUnique({
             where: { id: sessionId },
             include: {
                 user: true,
@@ -31,20 +31,20 @@ export async function GET(
             },
         });
 
-        if (!session || session.user.clerkId !== userId) {
+        if (!interviewSession || interviewSession.user.id !== session.user.id) {
             return NextResponse.json({ error: "Session not found" }, { status: 404 });
         }
 
         return NextResponse.json({
             session: {
-                id: session.id,
-                track: session.track,
-                difficulty: session.difficulty,
-                mode: session.mode,
-                status: session.status,
-                startedAt: session.startedAt,
+                id: interviewSession.id,
+                track: interviewSession.track,
+                difficulty: interviewSession.difficulty,
+                mode: interviewSession.mode,
+                status: interviewSession.status,
+                startedAt: interviewSession.startedAt,
             },
-            questions: session.questions,
+            questions: interviewSession.questions,
         });
     } catch (error) {
         console.error("Error fetching session:", error);

@@ -1,7 +1,7 @@
 "use server";
 
-import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { generateInterviewQuestions, evaluateResponse, generateReport, type Track, type Difficulty } from "@/lib/ai";
 
@@ -10,21 +10,10 @@ export async function startInterview(
     difficulty: Difficulty,
     mode: "TEXT" | "VOICE"
 ) {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const clerkUser = await currentUser();
-    let user = await prisma.user.findUnique({ where: { clerkId: userId } });
-
-    if (!user && clerkUser) {
-        user = await prisma.user.create({
-            data: {
-                clerkId: userId,
-                email: clerkUser.emailAddresses[0]?.emailAddress || "",
-                name: clerkUser.firstName || clerkUser.username || "",
-            },
-        });
-    }
+    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
 
     if (!user) throw new Error("User not found");
 
@@ -32,7 +21,7 @@ export async function startInterview(
     const questions = await generateInterviewQuestions(track, difficulty, 5);
 
     // Create session
-    const session = await prisma.interviewSession.create({
+    const interviewSession = await prisma.interviewSession.create({
         data: {
             userId: user.id,
             track,
@@ -51,7 +40,7 @@ export async function startInterview(
     revalidatePath("/dashboard");
     revalidatePath("/history");
 
-    return session.id;
+    return interviewSession.id;
 }
 
 export async function submitAnswer(
@@ -60,10 +49,10 @@ export async function submitAnswer(
     answer: string,
     codeSnippet?: string
 ) {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
+    const authSession = await auth();
+    if (!authSession?.user?.id) throw new Error("Unauthorized");
 
-    const session = await prisma.interviewSession.findUnique({
+    const interviewSession = await prisma.interviewSession.findUnique({
         where: { id: sessionId },
         include: {
             user: true,
@@ -71,19 +60,19 @@ export async function submitAnswer(
         },
     });
 
-    if (!session || session.user.clerkId !== userId) {
+    if (!interviewSession || interviewSession.user.id !== authSession.user.id) {
         throw new Error("Session not found");
     }
 
-    const question = session.questions[0];
+    const question = interviewSession.questions[0];
     if (!question) throw new Error("Question not found");
 
     // Evaluate answer
     const evaluation = await evaluateResponse(
         question.content,
         answer,
-        session.track as Track,
-        session.difficulty as Difficulty,
+        interviewSession.track as Track,
+        interviewSession.difficulty as Difficulty,
         codeSnippet
     );
 
@@ -108,10 +97,10 @@ export async function submitAnswer(
 }
 
 export async function completeInterview(sessionId: string) {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
+    const authSession = await auth();
+    if (!authSession?.user?.id) throw new Error("Unauthorized");
 
-    const session = await prisma.interviewSession.findUnique({
+    const interviewSession = await prisma.interviewSession.findUnique({
         where: { id: sessionId },
         include: {
             user: true,
@@ -121,15 +110,15 @@ export async function completeInterview(sessionId: string) {
         },
     });
 
-    if (!session || session.user.clerkId !== userId) {
+    if (!interviewSession || interviewSession.user.id !== authSession.user.id) {
         throw new Error("Session not found");
     }
 
     // Generate report
     const reportData = await generateReport({
-        track: session.track as Track,
-        difficulty: session.difficulty as Difficulty,
-        questions: session.questions.map((q: { content: string; response: { answer: string; overallScore: number | null; feedback: string | null } | null }) => ({
+        track: interviewSession.track as Track,
+        difficulty: interviewSession.difficulty as Difficulty,
+        questions: interviewSession.questions.map((q: { content: string; response: { answer: string; overallScore: number | null; feedback: string | null } | null }) => ({
             content: q.content,
             response: q.response
                 ? {
@@ -144,7 +133,7 @@ export async function completeInterview(sessionId: string) {
     // Create report
     await prisma.report.create({
         data: {
-            sessionId: session.id,
+            sessionId: interviewSession.id,
             overallScore: reportData.overallScore,
             strengths: JSON.stringify(reportData.strengths),
             weaknesses: JSON.stringify(reportData.weaknesses),
@@ -169,13 +158,13 @@ export async function completeInterview(sessionId: string) {
 }
 
 export async function getUserStats() {
-    const { userId } = await auth();
-    if (!userId) return null;
+    const session = await auth();
+    if (!session?.user?.id) return null;
 
     const user = await prisma.user.findUnique({
-        where: { clerkId: userId },
+        where: { id: session.user.id },
         include: {
-            sessions: {
+            interviewSessions: {
                 include: {
                     questions: {
                         include: { response: true },
@@ -187,12 +176,12 @@ export async function getUserStats() {
 
     if (!user) return null;
 
-    const totalInterviews = user.sessions.length;
-    const completedInterviews = user.sessions.filter(
+    const totalInterviews = user.interviewSessions.length;
+    const completedInterviews = user.interviewSessions.filter(
         (s: { status: string }) => s.status === "COMPLETED"
     ).length;
 
-    const allScores = user.sessions.flatMap((s: { questions: Array<{ response: { overallScore: number | null } | null }> }) =>
+    const allScores = user.interviewSessions.flatMap((s: { questions: Array<{ response: { overallScore: number | null } | null }> }) =>
         s.questions
             .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
             .filter((score: number | null | undefined): score is number => score !== null && score !== undefined)
@@ -211,4 +200,3 @@ export async function getUserStats() {
         credits: user.credits,
     };
 }
-

@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { streamEvaluateResponse, type Track, type Difficulty } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const { sessionId, questionId, answer, codeSnippet } = await request.json();
 
         // Get session and question
-        const session = await prisma.interviewSession.findUnique({
+        const interviewSession = await prisma.interviewSession.findUnique({
             where: { id: sessionId },
             include: {
                 user: true,
@@ -25,11 +25,11 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        if (!session || session.user.clerkId !== userId) {
+        if (!interviewSession || interviewSession.user.id !== session.user.id) {
             return NextResponse.json({ error: "Session not found" }, { status: 404 });
         }
 
-        const question = session.questions[0];
+        const question = interviewSession.questions[0];
         if (!question) {
             return NextResponse.json({ error: "Question not found" }, { status: 404 });
         }
@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
                     for await (const chunk of streamEvaluateResponse(
                         question.content,
                         answer,
-                        session.track as Track,
-                        session.difficulty as Difficulty,
+                        interviewSession.track as Track,
+                        interviewSession.difficulty as Difficulty,
                         codeSnippet
                     )) {
                         fullFeedback += chunk;

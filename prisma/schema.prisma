@@ -10,20 +10,61 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id              String   @id @default(cuid())
-  clerkId         String   @unique
-  email           String   @unique
-  name            String?
-  resumeUrl       String?
-  plan            String   @default("FREE") // Enum: Plan
-  credits         Int      @default(0)
-  mocksThisMonth  Int      @default(0)
-  lastMockReset   DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+// NextAuth.js Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
-  sessions        InterviewSession[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Application Models
+model User {
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?   @unique
+  emailVerified   DateTime?
+  image           String?
+  password        String?   // For credentials auth
+  resumeUrl       String?
+  plan            String    @default("FREE")
+  credits         Int       @default(0)
+  mocksThisMonth  Int       @default(0)
+  lastMockReset   DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  interviewSessions InterviewSession[]
   subscription    Subscription?
 }
 
@@ -43,10 +84,10 @@ model InterviewSession {
   id          String        @id @default(cuid())
   userId      String
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  track       String        // Enum: Track
-  difficulty  String        // Enum: Difficulty
-  mode        String        @default("TEXT") // Enum: InterviewMode
-  status      String        @default("IN_PROGRESS") // Enum: SessionStatus
+  track       String
+  difficulty  String
+  mode        String        @default("TEXT")
+  status      String        @default("IN_PROGRESS")
   startedAt   DateTime      @default(now())
   completedAt DateTime?
 
@@ -59,7 +100,7 @@ model Question {
   sessionId String
   session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   content   String
-  type      String       // Enum: QuestionType
+  type      String
   order     Int
 
   response  Response?
@@ -73,7 +114,6 @@ model Response {
   codeSnippet    String?
   audioUrl       String?
 
-  // AI Grading Scores (0-100)
   accuracy       Float?
   clarity        Float?
   confidence     Float?
@@ -90,10 +130,10 @@ model Report {
   session         InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   overallScore    Float
-  strengths       String // JSON String
-  weaknesses      String // JSON String
-  recommendations String // JSON String
-  roadmap         String? // JSON String
+  strengths       String
+  weaknesses      String
+  recommendations String
+  roadmap         String?
 
   createdAt       DateTime @default(now())
 }

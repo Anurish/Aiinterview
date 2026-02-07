@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { auth, getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { generateInterviewQuestions, type Track, type Difficulty } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
@@ -8,8 +8,8 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
     console.log("📨 API /api/interview/start HIT");
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -55,19 +55,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Get or create user in database
-        const clerkUser = await currentUser();
-        let user = await prisma.user.findUnique({ where: { clerkId: userId } });
-
-        if (!user && clerkUser) {
-            user = await prisma.user.create({
-                data: {
-                    clerkId: userId,
-                    email: clerkUser.emailAddresses[0]?.emailAddress || "",
-                    name: clerkUser.firstName || clerkUser.username || "",
-                },
-            });
-        }
+        // Get user from database
+        const user = await prisma.user.findUnique({ where: { id: session.user.id } });
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -121,7 +110,7 @@ export async function POST(request: NextRequest) {
 
         // Create session
         console.log("Creating session in DB...");
-        const session = await prisma.interviewSession.create({
+        const interviewSession = await prisma.interviewSession.create({
             data: {
                 userId: user.id,
                 track,
@@ -139,7 +128,7 @@ export async function POST(request: NextRequest) {
                 questions: true,
             },
         });
-        console.log("Session created:", session.id);
+        console.log("Session created:", interviewSession.id);
 
         // Increment mock count for free users
         if (isFreePlan) {
@@ -149,7 +138,7 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        return NextResponse.json({ sessionId: session.id });
+        return NextResponse.json({ sessionId: interviewSession.id });
     } catch (error: any) {
         console.error("Error starting interview:", error);
         return NextResponse.json(

@@ -1,6 +1,6 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { ProgressChart } from "@/components/ProgressChart";
 import { formatDate } from "@/lib/utils";
 import {
@@ -17,11 +17,11 @@ import {
 import { PLANS } from "@/lib/stripe";
 
 export default async function ProfilePage() {
-    const user = await currentUser();
-    if (!user) return notFound();
+    const session = await auth();
+    if (!session?.user?.id) return notFound();
 
     const dbUser = await prisma.user.findUnique({
-        where: { clerkId: user.id },
+        where: { id: session.user.id },
         include: {
             subscription: true,
             sessions: {
@@ -86,12 +86,12 @@ export default async function ProfilePage() {
             {/* Profile Header */}
             <div className="flex flex-col md:flex-row items-start gap-6 p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 via-indigo-500/10 to-purple-500/10 border border-violet-500/20">
                 <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-4xl font-bold text-white">
-                    {dbUser.name?.[0]?.toUpperCase() || user.firstName?.[0] || "U"}
+                    {dbUser.name?.[0]?.toUpperCase() || session.user?.name?.[0]?.toUpperCase() || "U"}
                 </div>
 
                 <div className="flex-1">
                     <h1 className="text-2xl font-bold text-white">
-                        {dbUser.name || user.firstName || "User"}
+                        {dbUser.name || session.user?.name || "User"}
                     </h1>
                     <p className="text-gray-400">{dbUser.email}</p>
 
