@@ -120,6 +120,7 @@ export async function GET(request: NextRequest) {
                 name: user.name || "User",
                 plan: user.plan,
                 credits: user.credits,
+                mocksThisMonth: user.mocksThisMonth,
             },
             stats: {
                 totalInterviews,
