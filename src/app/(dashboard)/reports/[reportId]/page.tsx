@@ -110,9 +110,30 @@ export default async function ReportPage({ params }: ReportPageProps) {
         technicalDepth: q.response?.technicalDepth || 0,
     }));
 
-    // Parse JSON strings back to arrays
-    const strengths = report?.strengths ? JSON.parse(report.strengths) : ["Good understanding of fundamentals"];
-    const weaknesses = report?.weaknesses ? JSON.parse(report.weaknesses) : ["Could improve on technical depth"];
+    // Parse JSON strings back to arrays, with score-appropriate defaults
+    let strengths = report?.strengths ? JSON.parse(report.strengths) : [];
+    let weaknesses = report?.weaknesses ? JSON.parse(report.weaknesses) : [];
+
+    // If no report data, generate appropriate feedback based on actual scores
+    if (strengths.length === 0) {
+        if (avgScores.overall >= 70) {
+            strengths = ["Good understanding of fundamentals", "Clear communication"];
+        } else if (avgScores.overall >= 40) {
+            strengths = ["Attempted to answer the questions"];
+        } else {
+            strengths = ["No notable strengths - focus on understanding the basics first"];
+        }
+    }
+
+    if (weaknesses.length === 0) {
+        if (avgScores.overall < 20) {
+            weaknesses = ["Most answers were incomplete or incorrect", "Need to study core concepts", "Practice explaining technical topics clearly"];
+        } else if (avgScores.overall < 50) {
+            weaknesses = ["Answers lacked depth and accuracy", "Need more practice with technical explanations"];
+        } else {
+            weaknesses = ["Could improve on technical depth"];
+        }
+    }
     const recommendations = report?.recommendations ? JSON.parse(report.recommendations) : ["Practice more coding problems"];
 
     return (
