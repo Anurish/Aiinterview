@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, getTrackLabel, getDifficultyColor, getScoreColor } from "@/lib/utils";
 import { Calendar, ChevronRight, Filter } from "lucide-react";
+import { MarkCompleteButton } from "@/components/MarkCompleteButton";
 
 export default async function HistoryPage() {
     const session = await auth();
@@ -121,16 +122,7 @@ export default async function HistoryPage() {
 
                                     {/* Status & Arrow */}
                                     <div className="flex items-center gap-4">
-                                        <span
-                                            className={`px-3 py-1 rounded-full text-xs font-medium ${session.status === "COMPLETED"
-                                                ? "bg-green-500/20 text-green-400"
-                                                : session.status === "IN_PROGRESS"
-                                                    ? "bg-yellow-500/20 text-yellow-400"
-                                                    : "bg-gray-500/20 text-gray-400"
-                                                }`}
-                                        >
-                                            {session.status.replace("_", " ")}
-                                        </span>
+                                        <MarkCompleteButton sessionId={session.id} status={session.status} />
                                         <ChevronRight className="h-5 w-5 text-gray-500 group-hover:text-violet-400 transition-colors" />
                                     </div>
                                 </div>
