@@ -112,7 +112,7 @@ export function Navbar() {
                                 )}
                             </div>
                         ) : (
-                            <>
+                            <div className="hidden sm:flex items-center gap-3">
                                 <Link
                                     href="/sign-in"
                                     className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
@@ -125,7 +125,7 @@ export function Navbar() {
                                 >
                                     Get Started
                                 </Link>
-                            </>
+                            </div>
                         )}
 
                         {/* Mobile Menu Button */}
