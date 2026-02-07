@@ -20,7 +20,7 @@ export const PLANS = {
     },
     PRO: {
         name: "Pro",
-        priceINR: 599,
+        priceINR: 200,
         priceUSD: 10,
         stripePriceId: process.env.STRIPE_PRO_PRICE_ID || "",
         features: [
