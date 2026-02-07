@@ -140,27 +140,53 @@ export function Navbar() {
             </div>
 
             {/* Mobile Menu */}
-            {isMenuOpen && (
-                <div className="md:hidden border-t border-white/10 bg-black/95 backdrop-blur-xl">
+            <div
+                className={`md:hidden overflow-hidden transition-all duration-300 ease-out ${isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+            >
+                <div className="border-t border-white/10 bg-black/95 backdrop-blur-xl">
                     <div className="px-4 py-4 space-y-2">
-                        {navLinks.map((link) => (
+                        {navLinks.map((link, index) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
                                 onClick={() => setIsMenuOpen(false)}
                                 className={cn(
-                                    "block px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                                    "block px-4 py-3 rounded-xl text-base font-medium transition-all transform",
                                     pathname === link.href
-                                        ? "bg-white/10 text-white"
-                                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        ? "bg-gradient-to-r from-violet-500/20 to-indigo-500/20 text-white border border-violet-500/30"
+                                        : "text-gray-400 hover:text-white hover:bg-white/5 active:scale-95"
                                 )}
+                                style={{
+                                    transitionDelay: isMenuOpen ? `${index * 50}ms` : "0ms"
+                                }}
                             >
                                 {link.label}
                             </Link>
                         ))}
+
+                        {/* Mobile Sign In/Up buttons for non-authenticated users */}
+                        {!isSignedIn && status !== "loading" && (
+                            <div className="pt-4 mt-4 border-t border-white/10 space-y-2">
+                                <Link
+                                    href="/sign-in"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block px-4 py-3 rounded-xl text-base font-medium text-gray-400 hover:text-white hover:bg-white/5 text-center"
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    href="/sign-up"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block px-4 py-3 rounded-xl text-base font-medium text-white bg-gradient-to-r from-violet-500 to-indigo-600 text-center"
+                                >
+                                    Get Started Free
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
-            )}
+            </div>
         </nav>
     );
 }
