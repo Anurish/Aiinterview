@@ -4,8 +4,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ReportCard } from "@/components/ReportCard";
 import { ProgressChart } from "@/components/ProgressChart";
+import { ReportActions } from "@/components/ReportActions";
 import { formatDate, getTrackLabel, getDifficultyColor } from "@/lib/utils";
-import { ArrowLeft, Download, Share2, Calendar, MessageSquare } from "lucide-react";
+import { ArrowLeft, Calendar, MessageSquare } from "lucide-react";
 import { generateReport, type Track, type Difficulty } from "@/lib/ai";
 
 interface ReportPageProps {
@@ -145,16 +146,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
                     </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors">
-                        <Share2 className="h-4 w-4" />
-                        Share
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors">
-                        <Download className="h-4 w-4" />
-                        Download PDF
-                    </button>
-                </div>
+                <ReportActions reportId={reportId} track={interviewSession.track} />
             </div>
 
             {/* Report Card */}
