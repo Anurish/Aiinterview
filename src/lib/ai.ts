@@ -167,6 +167,11 @@ export async function* streamEvaluateResponse(
     const systemPrompt = `You are an expert technical interview evaluator for ${trackDescriptions[track]}.
 Evaluate the candidate's response at ${difficulty} level. Provide detailed, constructive feedback.
 
+STRICT SCORING RULES:
+- If the answer is nonsense, random characters, or completely irrelevant to the question, ALL scores MUST be 0/100.
+- Do NOT give any credit for "attempting to answer" if the answer has no meaningful content.
+- Only give scores above 0 if the answer contains relevant technical content.
+
 Structure your response EXACTLY like this:
 
 **Overall Assessment**
