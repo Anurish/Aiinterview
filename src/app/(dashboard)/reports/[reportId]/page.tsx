@@ -71,12 +71,31 @@ export default async function ReportPage({ params }: ReportPageProps) {
     // Calculate average scores
     type ResponseType = { accuracy: number | null; clarity: number | null; confidence: number | null; technicalDepth: number | null; overallScore: number | null } | null;
     const responses = interviewSession.questions.map((q: { response: ResponseType }) => q.response).filter(Boolean) as NonNullable<ResponseType>[];
+
+    // Calculate individual metric averages
+    const avgAccuracy = responses.length > 0
+        ? responses.reduce((acc: number, r) => acc + (r?.accuracy || 0), 0) / responses.length
+        : 0;
+    const avgClarity = responses.length > 0
+        ? responses.reduce((acc: number, r) => acc + (r?.clarity || 0), 0) / responses.length
+        : 0;
+    const avgConfidence = responses.length > 0
+        ? responses.reduce((acc: number, r) => acc + (r?.confidence || 0), 0) / responses.length
+        : 0;
+    const avgTechnicalDepth = responses.length > 0
+        ? responses.reduce((acc: number, r) => acc + (r?.technicalDepth || 0), 0) / responses.length
+        : 0;
+
+    // Calculate overall score using weighted average of individual metrics
+    // This is more reliable than using the stored overallScore which may not be parsed correctly
+    const calculatedOverall = (avgAccuracy * 0.35) + (avgClarity * 0.25) + (avgConfidence * 0.15) + (avgTechnicalDepth * 0.25);
+
     const avgScores = {
-        accuracy: responses.reduce((acc: number, r) => acc + (r?.accuracy || 0), 0) / responses.length || 0,
-        clarity: responses.reduce((acc: number, r) => acc + (r?.clarity || 0), 0) / responses.length || 0,
-        confidence: responses.reduce((acc: number, r) => acc + (r?.confidence || 0), 0) / responses.length || 0,
-        technicalDepth: responses.reduce((acc: number, r) => acc + (r?.technicalDepth || 0), 0) / responses.length || 0,
-        overall: responses.reduce((acc: number, r) => acc + (r?.overallScore || 0), 0) / responses.length || 0,
+        accuracy: avgAccuracy,
+        clarity: avgClarity,
+        confidence: avgConfidence,
+        technicalDepth: avgTechnicalDepth,
+        overall: calculatedOverall,
     };
 
     // Prepare chart data
