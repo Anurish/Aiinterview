@@ -11,7 +11,7 @@ export default async function HistoryPage() {
     const dbUser = await prisma.user.findUnique({
         where: { id: session.user.id },
         include: {
-            sessions: {
+            interviewSessions: {
                 include: {
                     questions: {
                         include: {
@@ -27,7 +27,7 @@ export default async function HistoryPage() {
         },
     });
 
-    const sessions = dbUser?.sessions || [];
+    const sessions = dbUser?.interviewSessions || [];
 
     return (
         <div className="space-y-8 animate-in">
