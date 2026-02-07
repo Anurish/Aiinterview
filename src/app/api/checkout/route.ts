@@ -62,13 +62,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
         }
 
-        // Update user plan if pro subscription
-        if (planId === "pro") {
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { plan: "PRO" },
-            });
-        }
+        // Note: User plan update happens via Stripe webhook after successful payment
+        // Do NOT update plan here - wait for webhook confirmation
 
         return NextResponse.json({ url: checkoutUrl });
     } catch (error) {
