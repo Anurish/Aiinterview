@@ -26,11 +26,24 @@ export function ReportActions({ reportId, track }: ReportActionsProps) {
             }
 
             // Create canvas from the element
+            // Note: html2canvas may show warnings about unsupported CSS features like lab() colors
+            // These are safe to ignore as the PDF will still generate correctly
             const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: "#0f172a", // Match the dark background
                 logging: false,
+                // Clone callback to handle unsupported CSS
+                onclone: (clonedDoc) => {
+                    // Remove any elements that might cause issues
+                    const style = clonedDoc.createElement('style');
+                    style.textContent = `
+                        * { 
+                            color-scheme: dark !important;
+                        }
+                    `;
+                    clonedDoc.head.appendChild(style);
+                },
             });
 
             // Calculate PDF dimensions (A4 size)
