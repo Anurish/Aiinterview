@@ -32,7 +32,7 @@ function CheckoutContent() {
         if (planId === "pro") {
             return {
                 name: PLANS.PRO.name,
-                price: "$10/month",
+                price: `₹${PLANS.PRO.priceINR}/month`,
                 description: "Pro Subscription",
                 features: PLANS.PRO.features,
             };
@@ -49,7 +49,7 @@ function CheckoutContent() {
 
         return {
             name: `${pack.credits} Credits`,
-            price: "$" + pack.priceUSD,
+            price: `₹${pack.priceINR}`,
             description: "One-time purchase",
             features: [
                 `${pack.credits} additional interview credits`,
