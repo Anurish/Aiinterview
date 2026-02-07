@@ -167,19 +167,36 @@ export async function* streamEvaluateResponse(
     const systemPrompt = `You are an expert technical interview evaluator for ${trackDescriptions[track]}.
 Evaluate the candidate's response at ${difficulty} level. Provide detailed, constructive feedback.
 
-Structure your response:
-1. Overall Assessment (brief summary)
-2. Strengths (what they did well)
-3. Areas for Improvement (specific suggestions)
-4. Score Breakdown: accuracy, clarity, confidence, technicalDepth (0-100 each)
-5. Overall Score (weighted average)`;
+Structure your response EXACTLY like this:
+
+**Overall Assessment**
+[Brief 1-2 sentence summary of the response quality]
+
+**Strengths**
+- [Strength 1]
+- [Strength 2]
+
+**Areas for Improvement**
+- [Area 1]
+- [Area 2]
+
+**Score Breakdown**
+- Accuracy: [SCORE]/100 - [brief explanation]
+- Clarity: [SCORE]/100 - [brief explanation]  
+- Confidence: [SCORE]/100 - [brief explanation]
+- Technical Depth: [SCORE]/100 - [brief explanation]
+
+**Overall Score: [SCORE]/100**
+
+IMPORTANT: Replace [SCORE] with actual numbers 0-100. The Overall Score should be a weighted average:
+(Accuracy × 0.35) + (Clarity × 0.25) + (Confidence × 0.15) + (Technical Depth × 0.25)`;
 
     const userMessage = `Question: ${question}
 
 Answer: ${answer}
 ${codeSnippet ? `\nCode Snippet:\n\`\`\`\n${codeSnippet}\n\`\`\`` : ""}
 
-Provide a detailed evaluation.`;
+Provide a detailed evaluation following the exact format specified.`;
 
     const stream = await groq.chat.completions.create({
         model: MODEL,

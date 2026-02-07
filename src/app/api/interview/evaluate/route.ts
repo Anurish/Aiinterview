@@ -53,23 +53,38 @@ export async function POST(request: NextRequest) {
                         controller.enqueue(encoder.encode(chunk));
                     }
 
-                    // Parse scores from feedback and save response
-                    const scoreMatch = fullFeedback.match(/accuracy[:\s]+(\d+)/i);
+                    // Parse scores from feedback - improved regex patterns
+                    // Match patterns like "Accuracy: 68/100" or "accuracy: 68" or "Accuracy: 68"
+                    const accuracyMatch = fullFeedback.match(/accuracy[:\s]+(\d+)/i);
                     const clarityMatch = fullFeedback.match(/clarity[:\s]+(\d+)/i);
                     const confidenceMatch = fullFeedback.match(/confidence[:\s]+(\d+)/i);
-                    const technicalMatch = fullFeedback.match(/technical[_\s]?depth[:\s]+(\d+)/i);
-                    const overallMatch = fullFeedback.match(/overall[_\s]?score[:\s]+(\d+)/i);
+                    const technicalMatch = fullFeedback.match(/technical[\s_-]?depth[:\s]+(\d+)/i);
+                    const overallMatch = fullFeedback.match(/overall[\s_-]?score[:\s]+(\d+)/i);
+
+                    const accuracy = accuracyMatch ? parseFloat(accuracyMatch[1]) : 70;
+                    const clarity = clarityMatch ? parseFloat(clarityMatch[1]) : 70;
+                    const confidence = confidenceMatch ? parseFloat(confidenceMatch[1]) : 70;
+                    const technicalDepth = technicalMatch ? parseFloat(technicalMatch[1]) : 70;
+
+                    // Calculate overallScore using weighted average if not parsed correctly
+                    let overallScore = overallMatch ? parseFloat(overallMatch[1]) : null;
+                    if (!overallScore || overallScore < 10) {
+                        // Fallback: calculate weighted average
+                        overallScore = Math.round(
+                            (accuracy * 0.35) + (clarity * 0.25) + (confidence * 0.15) + (technicalDepth * 0.25)
+                        );
+                    }
 
                     await prisma.response.create({
                         data: {
                             questionId: question.id,
                             answer,
                             codeSnippet,
-                            accuracy: scoreMatch ? parseFloat(scoreMatch[1]) : null,
-                            clarity: clarityMatch ? parseFloat(clarityMatch[1]) : null,
-                            confidence: confidenceMatch ? parseFloat(confidenceMatch[1]) : null,
-                            technicalDepth: technicalMatch ? parseFloat(technicalMatch[1]) : null,
-                            overallScore: overallMatch ? parseFloat(overallMatch[1]) : null,
+                            accuracy,
+                            clarity,
+                            confidence,
+                            technicalDepth,
+                            overallScore,
                             feedback: fullFeedback,
                         },
                     });
