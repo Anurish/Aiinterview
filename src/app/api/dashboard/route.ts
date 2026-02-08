@@ -49,14 +49,14 @@ export async function GET(request: NextRequest) {
 
         // Calculate average score
         const scoredSessions = completedSessions.filter(
-            (s: SessionType) => s.questions.some((q) => q.response?.overallScore !== null)
+            (s: SessionType) => s.questions.some((q) => q.response?.overallScore != null)
         );
 
         let averageScore = 0;
         if (scoredSessions.length > 0) {
             const totalScore = scoredSessions.reduce((acc: number, s: SessionType) => {
                 const sessionScores = s.questions
-                    .filter((q) => q.response?.overallScore !== null)
+                    .filter((q) => q.response?.overallScore != null)
                     .map((q) => q.response!.overallScore!);
                 const sessionAvg = sessionScores.length > 0
                     ? sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
             const getAvgScore = (sessions: SessionType[]) => {
                 const scores = sessions.flatMap((s: SessionType) =>
                     s.questions
-                        .filter((q) => q.response?.overallScore !== null)
+                        .filter((q) => q.response?.overallScore != null)
                         .map((q) => q.response!.overallScore!)
                 );
                 return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
         // Get recent sessions (top 5)
         const recentSessions = completedSessions.slice(0, 5).map((s: SessionType) => {
             const scores = s.questions
-                .filter((q) => q.response?.overallScore !== null)
+                .filter((q) => q.response?.overallScore != null)
                 .map((q) => q.response!.overallScore!);
             const score = scores.length > 0
                 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
@@ -131,10 +131,10 @@ export async function GET(request: NextRequest) {
             recentSessions,
             trackCounts,
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Dashboard error:", error);
         return NextResponse.json(
-            { error: "Failed to fetch dashboard data" },
+            { error: error.message || "Failed to fetch dashboard data" },
             { status: 500 }
         );
     }

@@ -131,13 +131,23 @@ export default function InterviewPage({ params }: InterviewPageProps) {
         }
     }, [session, questions, currentQuestionIndex, sessionId, codeSnippet]);
 
-    const handleNextQuestion = useCallback(() => {
+    const handleNextQuestion = useCallback(async () => {
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex((prev) => prev + 1);
             setStreamingFeedback("");
             setCodeSnippet("");
         } else {
             // Complete interview
+            try {
+                await fetch("/api/interview/complete", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sessionId }),
+                });
+            } catch (error) {
+                console.error("Failed to mark interview as complete:", error);
+            }
+
             router.push(`/reports/${sessionId}`);
         }
     }, [currentQuestionIndex, questions.length, router, sessionId]);

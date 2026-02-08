@@ -55,7 +55,8 @@ function DashboardContent() {
             try {
                 const response = await fetch("/api/dashboard");
                 if (!response.ok) {
-                    throw new Error("Failed to fetch dashboard data");
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || "Failed to fetch dashboard data");
                 }
                 const dashboardData = await response.json();
                 setData(dashboardData);
@@ -104,8 +105,8 @@ function DashboardContent() {
             {showNotification && (
                 <div
                     className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right ${notificationType === "success"
-                            ? "bg-green-500/20 border border-green-500/30 text-green-300"
-                            : "bg-red-500/20 border border-red-500/30 text-red-300"
+                        ? "bg-green-500/20 border border-green-500/30 text-green-300"
+                        : "bg-red-500/20 border border-red-500/30 text-red-300"
                         }`}
                 >
                     {notificationType === "success" ? (
