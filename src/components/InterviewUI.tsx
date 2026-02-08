@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Loader2, ChevronRight, BarChart3, Zap, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
 import type { Question } from "@/types";
 import ReactMarkdown from "react-markdown";
 
@@ -14,6 +15,7 @@ interface InterviewUIProps {
     isEvaluating: boolean;
     streamingFeedback: string;
     isPro?: boolean;
+    userPlan?: "FREE" | "PRO";
 }
 
 export function InterviewUI({
@@ -24,6 +26,7 @@ export function InterviewUI({
     isEvaluating,
     streamingFeedback,
     isPro = false,
+    userPlan = "FREE",
 }: InterviewUIProps) {
     const [answer, setAnswer] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -44,6 +47,12 @@ export function InterviewUI({
         if (!answer.trim() || isEvaluating) return;
         await onAnswer(answer);
         setAnswer("");
+    };
+
+    const handleVoiceTranscript = (text: string) => {
+        if (text) {
+            setAnswer((prev) => (prev + " " + text).trim());
+        }
     };
 
     if (!currentQuestion) {
@@ -137,6 +146,22 @@ export function InterviewUI({
             <div className="flex-shrink-0 pt-4 border-t border-white/10">
                 {!hasAnswered ? (
                     <div className="space-y-3">
+                        <div className="flex items-center gap-4 mb-2">
+                            {userPlan === "PRO" ? (
+                                <VoiceRecorder
+                                    onTranscript={() => { }}
+                                    onFinalTranscript={handleVoiceTranscript}
+                                />
+                            ) : (
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/5 border border-white/10 opacity-70" title="Upgrade to Pro for Voice Answers">
+                                    <Lock className="h-4 w-4 text-gray-400" />
+                                    <span className="text-xs text-gray-400 font-medium">Voice Answer (PRO)</span>
+                                </div>
+                            )}
+                            <span className="text-xs text-gray-400 flex-1 text-right">
+                                {isEvaluating ? "Evaluating..." : "Listening enabled"}
+                            </span>
+                        </div>
                         {/* Text Input */}
                         <textarea
                             ref={textareaRef}
@@ -189,4 +214,3 @@ export function InterviewUI({
         </div>
     );
 }
-

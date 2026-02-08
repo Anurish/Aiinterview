@@ -24,7 +24,7 @@ export default async function ProfilePage() {
         where: { id: session.user.id },
         include: {
             subscription: true,
-            sessions: {
+            interviewSessions: {
                 include: {
                     questions: {
                         include: {
@@ -49,12 +49,12 @@ export default async function ProfilePage() {
         questions: Array<{ response: { overallScore: number | null } | null }>;
     };
 
-    const totalInterviews = dbUser.sessions.length;
-    const completedInterviews = dbUser.sessions.filter(
+    const totalInterviews = dbUser.interviewSessions.length;
+    const completedInterviews = dbUser.interviewSessions.filter(
         (s: SessionWithQuestions) => s.status === "COMPLETED"
     ).length;
     const avgScore =
-        dbUser.sessions.reduce((acc: number, s: SessionWithQuestions) => {
+        dbUser.interviewSessions.reduce((acc: number, s: SessionWithQuestions) => {
             const scores = s.questions
                 .map((q: { response: { overallScore: number | null } | null }) => q.response?.overallScore)
                 .filter(Boolean) as number[];
@@ -66,7 +66,7 @@ export default async function ProfilePage() {
         }, 0) / Math.max(completedInterviews, 1);
 
     // Prepare chart data
-    const chartData = dbUser.sessions
+    const chartData = dbUser.interviewSessions
         .slice(0, 10)
         .reverse()
         .map((s: SessionWithQuestions) => {

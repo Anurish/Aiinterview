@@ -8,6 +8,7 @@ import { InterviewUI } from "@/components/InterviewUI";
 import { CodeEditor } from "@/components/CodeEditor";
 import { cn, getTrackLabel, getDifficultyColor } from "@/lib/utils";
 import type { Question, InterviewSession } from "@/types";
+import { completeInterview } from "@/actions/interview";
 
 interface InterviewPageProps {
     params: Promise<{ sessionId: string }>;
@@ -139,16 +140,11 @@ export default function InterviewPage({ params }: InterviewPageProps) {
         } else {
             // Complete interview
             try {
-                await fetch("/api/interview/complete", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ sessionId }),
-                });
+                await completeInterview(sessionId);
+                router.push(`/reports/${sessionId}`);
             } catch (error) {
                 console.error("Failed to mark interview as complete:", error);
             }
-
-            router.push(`/reports/${sessionId}`);
         }
     }, [currentQuestionIndex, questions.length, router, sessionId]);
 
@@ -217,8 +213,8 @@ export default function InterviewPage({ params }: InterviewPageProps) {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className={cn("grid gap-8", isCodingQuestion ? "lg:grid-cols-2" : "max-w-3xl mx-auto")}>
-                    {/* Interview UI */}
-                    <div className="min-h-[500px]">
+                    {/* Main Content Area */}
+                    <div className="flex-1 overflow-y-auto">
                         <InterviewUI
                             questions={questions}
                             currentQuestionIndex={currentQuestionIndex}
@@ -227,9 +223,9 @@ export default function InterviewPage({ params }: InterviewPageProps) {
                             isEvaluating={isEvaluating}
                             streamingFeedback={streamingFeedback}
                             isPro={userPlan === "PRO"}
+                            userPlan={userPlan}
                         />
                     </div>
-
                     {/* Code Editor (for coding questions) */}
                     {isCodingQuestion && (
                         <div>
@@ -243,7 +239,7 @@ export default function InterviewPage({ params }: InterviewPageProps) {
                         </div>
                     )}
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }
