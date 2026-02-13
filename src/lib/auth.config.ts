@@ -53,8 +53,10 @@ export const authConfig: NextAuthConfig = {
             return true;
         },
         async jwt({ token, user, trigger, session }) {
+            console.log("JWT Callback:", { hasUser: !!user, plan: (user as any)?.plan });
             if (user) {
                 token.id = user.id;
+                token.plan = (user as any).plan;
             }
             if (trigger === "update" && session?.name) {
                 token.name = session.name;
@@ -62,11 +64,15 @@ export const authConfig: NextAuthConfig = {
             return token;
         },
         async session({ session, token }) {
+            console.log("Session Callback:", token.plan);
             if (session.user && token.id) {
                 session.user.id = token.id as string;
             }
             if (session.user && token.name) {
                 session.user.name = token.name as string;
+            }
+            if (session.user && token.plan) {
+                session.user.plan = token.plan as string;
             }
             return session;
         },

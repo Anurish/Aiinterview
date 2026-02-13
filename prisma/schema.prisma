@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // NextAuth.js Models
@@ -66,6 +67,7 @@ model User {
   sessions        Session[]
   interviewSessions InterviewSession[]
   subscription    Subscription?
+  userProgress    UserProgress[]
 }
 
 model Subscription {
@@ -124,6 +126,7 @@ model Response {
   createdAt      DateTime @default(now())
 }
 
+
 model Report {
   id              String           @id @default(cuid())
   sessionId       String           @unique
@@ -136,4 +139,40 @@ model Report {
   roadmap         String?
 
   createdAt       DateTime @default(now())
+}
+
+// Learning Platform Models
+model Lesson {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  content     String   @db.Text // Markdown content
+  language    String   @default("javascript") // javascript, python, java, cpp, go
+  order       Int      @default(0)
+  
+  // Code Challenge
+  initialCode String?  @db.Text
+  solutionCode String? @db.Text
+  testCases   String?  @db.Text // JSON string of test cases
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userProgress UserProgress[]
+}
+
+model UserProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  completed Boolean  @default(false)
+  userCode  String?  @db.Text // Last saved code
+  
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, lessonId])
 }

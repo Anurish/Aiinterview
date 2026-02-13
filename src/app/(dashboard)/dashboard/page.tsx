@@ -94,6 +94,12 @@ function DashboardContent() {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-red-400 mb-4">{error || "Failed to load dashboard"}</p>
+                    <Link
+                        href="/api/auth/signout"
+                        className="text-violet-400 hover:text-violet-300 underline"
+                    >
+                        Sign Out and Retry
+                    </Link>
                 </div>
             </div>
         );
@@ -293,30 +299,32 @@ function DashboardContent() {
             </div>
 
             {/* Pro Upgrade Banner */}
-            <div className="relative p-8 rounded-2xl bg-gradient-to-br from-violet-500/20 via-indigo-500/20 to-purple-500/20 border border-violet-500/30 overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl" />
-                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-violet-500/20">
-                            <Sparkles className="h-8 w-8 text-violet-400" />
+            {data.user.plan === "FREE" && (
+                <div className="relative p-8 rounded-2xl bg-gradient-to-br from-violet-500/20 via-indigo-500/20 to-purple-500/20 border border-violet-500/30 overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl" />
+                    <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-xl bg-violet-500/20">
+                                <Sparkles className="h-8 w-8 text-violet-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-semibold text-white">
+                                    Upgrade to Pro
+                                </h3>
+                                <p className="text-gray-400">
+                                    Unlock unlimited interviews, voice mode, and AI reports
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-xl font-semibold text-white">
-                                Upgrade to Pro
-                            </h3>
-                            <p className="text-gray-400">
-                                Unlock unlimited interviews, voice mode, and AI reports
-                            </p>
-                        </div>
+                        <Link
+                            href="/pricing"
+                            className="px-6 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-medium hover:opacity-90 transition-opacity"
+                        >
+                            View Plans
+                        </Link>
                     </div>
-                    <Link
-                        href="/pricing"
-                        className="px-6 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-medium hover:opacity-90 transition-opacity"
-                    >
-                        View Plans
-                    </Link>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

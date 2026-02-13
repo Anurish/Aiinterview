@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
+    Code,
     MessageSquare,
     History,
     BarChart3,
@@ -22,6 +23,7 @@ const sidebarLinks = [
         label: "Main",
         links: [
             { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/learn", label: "Learn Code", icon: Code },
             { href: "/dashboard/new-interview", label: "New Interview", icon: MessageSquare },
             { href: "/dashboard/performance", label: "Performance", icon: BarChart3 },
             { href: "/history", label: "History", icon: History },
@@ -128,7 +130,7 @@ export function Sidebar() {
                         Help & Support
                     </Link>
 
-                {/* Pro Upgrade Card */}
+                    {/* Pro Upgrade Card */}
                     {userPlan === "PRO" ? (
                         <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
                             <div className="flex items-center gap-2 mb-2">

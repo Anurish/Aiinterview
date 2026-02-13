@@ -10,7 +10,18 @@ if (!apiKey) {
 
 export const groq = new Groq({
     apiKey,
+    fetch: fetch as any,
 });
+
+export async function generateText(prompt: string): Promise<string> {
+    const response = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.5,
+        max_tokens: 500,
+    });
+    return response.choices[0].message.content || "";
+}
 
 // Using Llama 3.3 70B for best quality (free on Groq)
 const MODEL = "llama-3.3-70b-versatile";

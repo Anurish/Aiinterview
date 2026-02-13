@@ -357,3 +357,118 @@ body {
   mask-composite: exclude;
   opacity: 0.5;
 }
+
+/* ===== CONSOLE OUTPUT STYLES ===== */
+
+/* Console line slide-in animation */
+@keyframes consoleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.console-line {
+  animation: consoleFadeIn 0.3s ease-out both;
+}
+
+/* Blinking cursor */
+@keyframes cursorBlink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.console-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background: rgba(52, 211, 153, 0.6);
+  border-radius: 1px;
+  animation: cursorBlink 1s step-end infinite;
+}
+
+/* Scanline sweep */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.console-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom,
+      transparent 50%,
+      rgba(0, 255, 100, 0.01) 50%);
+  background-size: 100% 4px;
+  z-index: 1;
+  opacity: 0.4;
+}
+
+/* Console header */
+.console-header {
+  background: linear-gradient(180deg, #1a1a1e 0%, #141416 100%);
+}
+
+/* Console body */
+.console-body {
+  background: radial-gradient(ellipse at top, #101014 0%, #0a0a0c 100%);
+  position: relative;
+}
+
+/* Console scrollbar */
+.console-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.console-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.console-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+
+/* Time badge */
+.console-time-badge {
+  background: rgba(52, 211, 153, 0.08);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.15);
+}
+
+/* Spinner */
+@keyframes consoleSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.console-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(52, 211, 153, 0.2);
+  border-top-color: #34d399;
+  border-radius: 50%;
+  animation: consoleSpin 0.6s linear infinite;
+}

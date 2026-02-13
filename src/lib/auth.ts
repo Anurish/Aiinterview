@@ -53,10 +53,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     email: user.email,
                     name: user.name,
                     image: user.image,
+                    plan: user.plan,
                 };
             },
         }),
     ],
+    callbacks: {
+        ...authConfig.callbacks,
+        async jwt({ token, user, trigger, session }) {
+            // Run existing jwt callback first
+            if (authConfig.callbacks?.jwt) {
+                token = await authConfig.callbacks.jwt({ token, user, trigger, session } as any) || token;
+            }
+
+            // If plan is missing in token, fetch from DB
+            if (!token.plan && token.sub) {
+                const dbUser = await prisma.user.findUnique({
+                    where: { id: token.sub },
+                    select: { plan: true },
+                });
+                if (dbUser) {
+                    token.plan = dbUser.plan;
+                }
+            }
+            return token;
+        },
+        async session({ session, token }: { session: any, token: any }) {
+            // Run existing session callback
+            if (authConfig.callbacks?.session) {
+                session = await authConfig.callbacks.session({ session, token } as any) || session;
+            }
+            // Ensure plan is on session user
+            if (token.plan && session.user) {
+                session.user.plan = token.plan as string;
+            }
+            return session;
+        }
+    }
 });
 
 // Helper function to get the current user (server-side)
